@@ -1,3 +1,5 @@
+"""Create and retrieve events together with their related records."""
+
 from fastapi import APIRouter, HTTPException
 from sqlalchemy import text
 
@@ -12,6 +14,7 @@ router = APIRouter(
 
 @router.post("")
 def create_event(event: EventCreate):
+    # Store the event and its location/source records as one atomic operation.
 
     insert_event = text("""
         INSERT INTO events (
@@ -35,6 +38,7 @@ def create_event(event: EventCreate):
         RETURNING event_id
     """)
 
+    # Store both coordinates and a PostGIS point for spatial queries.
     insert_location = text("""
         INSERT INTO locations (
             event_id,
@@ -60,6 +64,7 @@ def create_event(event: EventCreate):
         )
     """)
 
+    # Preserve the originating source alongside the normalized event data.
     insert_source = text("""
         INSERT INTO sources (
             event_id,
@@ -83,6 +88,7 @@ def create_event(event: EventCreate):
         )
     """)
 
+    # Commit all three inserts together or roll them back together on failure.
     with engine.begin() as connection:
 
         result = connection.execute(
@@ -133,6 +139,7 @@ def create_event(event: EventCreate):
 
 @router.get("")
 def get_events():
+    # Include optional location data without hiding events that lack coordinates.
 
     query = text("""
         SELECT
@@ -172,6 +179,7 @@ def get_events():
 
 @router.get("/{event_id}")
 def get_event(event_id: int):
+    # Assemble the event's evidence and model results into one response.
 
     event_query = text("""
         SELECT
@@ -213,6 +221,7 @@ def get_event(event_id: int):
             {"event_id": event_id}
         ).mappings().first()
 
+        # Return a clear API error instead of producing an empty detail response.
         if not event_result:
             raise HTTPException(
                 status_code=404,

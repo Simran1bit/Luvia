@@ -1,3 +1,6 @@
+-- Define the PostgreSQL tables and spatial data structures used by Luvia.
+
+-- PostGIS supplies geography types and spatial indexes for map queries.
 CREATE EXTENSION IF NOT EXISTS postgis;
 
 
@@ -77,6 +80,7 @@ CREATE TABLE IF NOT EXISTS locations (
     city VARCHAR(100),
     state VARCHAR(100),
 
+    -- Keep a geographic point so distance and map operations use earth coordinates.
     geometry GEOGRAPHY(Point, 4326)
 );
 
@@ -88,6 +92,7 @@ CREATE TABLE IF NOT EXISTS locations (
 CREATE TABLE IF NOT EXISTS verification (
     verification_id BIGSERIAL PRIMARY KEY,
 
+    -- One current verification assessment is maintained for each event.
     event_id BIGINT NOT NULL UNIQUE
         REFERENCES events(event_id)
         ON DELETE CASCADE,
@@ -133,6 +138,7 @@ CREATE TABLE IF NOT EXISTS model_predictions (
 );
 
 
+-- Index frequent filters, joins, timestamps, and spatial lookups.
 -- ======================================
 -- INDEXES
 -- ======================================

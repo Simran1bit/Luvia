@@ -1,3 +1,5 @@
+"""Expose event locations and verification data for the map view."""
+
 from fastapi import APIRouter
 from sqlalchemy import text
 
@@ -11,6 +13,7 @@ router = APIRouter(
 
 @router.get("")
 def get_map_events():
+    # Return only location-bearing events so the map can place every result.
 
     query = text("""
         SELECT
@@ -33,13 +36,14 @@ def get_map_events():
         ORDER BY e.event_timestamp DESC
     """)
 
+    # Close the read-only connection automatically after the result is materialized.
     with engine.connect() as connection:
 
         events = [
             dict(row)
             for row in connection.execute(
                 query
-            ).mappings()
+            ).mappings() #let us work with row objects like dictionaries
         ]
 
     return {

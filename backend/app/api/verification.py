@@ -1,3 +1,5 @@
+"""Calculate event confidence from source evidence and persist its status."""
+
 from fastapi import APIRouter, HTTPException
 from sqlalchemy import text
 
@@ -11,6 +13,7 @@ router = APIRouter(
 
 @router.post("")
 def verify_event(event_id: int):
+    # Recalculate confidence from the evidence currently attached to the event.
 
     source_query = text("""
         SELECT
@@ -26,6 +29,7 @@ def verify_event(event_id: int):
         WHERE event_id = :event_id
     """)
 
+    # Keep the verification record and event status synchronized in one transaction.
     with engine.begin() as connection:
 
         event = connection.execute(
@@ -47,6 +51,7 @@ def verify_event(event_id: int):
         source_count = source_info["source_count"]
         source_types = source_info["source_types"]
 
+        # Cap evidence contributions at 1.0 so extra sources cannot inflate scores.
         source_score = min(source_types / 3, 1.0)
         corroboration_score = min(source_count / 3, 1.0)
 
@@ -60,6 +65,7 @@ def verify_event(event_id: int):
             + corroboration_score * 0.30
         )
 
+        # Convert the weighted score into the status consumed by the API clients.
         if final_score >= 0.85:
             status = "verified"
         elif final_score >= 0.60:
@@ -67,6 +73,7 @@ def verify_event(event_id: int):
         else:
             status = "needs_review"
 
+        # Upsert so repeated verification refreshes the existing assessment.
         connection.execute(
             text("""
                 INSERT INTO verification (
@@ -118,6 +125,7 @@ def verify_event(event_id: int):
             }
         )
 
+        # Mirror the result on events for fast filtering and list responses.
         connection.execute(
             text("""
                 UPDATE events

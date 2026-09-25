@@ -1,9 +1,12 @@
+"""Define the request model used when creating an event."""
+
 from datetime import datetime
 
 from pydantic import BaseModel
 
 
 class EventCreate(BaseModel):
+    # Pydantic validates incoming API data before it reaches SQL statements
     event_type: str
     title: str
     description: str | None = None
