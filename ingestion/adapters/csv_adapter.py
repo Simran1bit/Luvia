@@ -20,6 +20,9 @@ def read_csv(file_path: str):
         # Stream one row at a time to keep memory usage low for larger datasets.
         reader = csv.DictReader(file)
         yield from reader
+        # we used yield instead of return because 
+        # return would load all rows into memory at once, which is not efficient for large files.
+        # yield allows us to process each row individually, keeping memory usage low.
 
 """
 # Quick smoke test for the adapter during local development and debugging.
