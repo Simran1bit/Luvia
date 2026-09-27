@@ -21,11 +21,13 @@ def read_csv(file_path: str):
         reader = csv.DictReader(file)
         yield from reader
 
-
+"""
+# Quick smoke test for the adapter during local development and debugging.
+    
 if __name__ == "__main__":
-    # Quick smoke test for the adapter during local development and debugging.
     csv_path = "data/mock/weather_observations.csv"
 
     for row in read_csv(csv_path):
         print(row)
         break
+"""

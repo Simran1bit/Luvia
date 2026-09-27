@@ -44,8 +44,10 @@ def normalize_weather_event(row: dict) -> dict:
 
     return event
 
+"""
+# Quick smoke test for the normalizer during local development and debugging.
+
 if __name__ == "__main__":
-    # Quick smoke test for the normalizer during local development and debugging.
     sample_row = {
         "timestamp": "2026-09-01T10:00:00",
         "location_name": "Delhi_Central",
@@ -60,3 +62,4 @@ if __name__ == "__main__":
     event = normalize_weather_event(sample_row)
 
     print(event)
+"""
