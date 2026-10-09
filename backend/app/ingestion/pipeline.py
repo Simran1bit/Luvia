@@ -1,7 +1,6 @@
-from ingestion.adapters.csv_adapter import read_csv
-from ingestion.normalizer import normalize_weather_event
-from ingestion.validator import validate_weather_event
-
+from backend.app.ingestion.adapters.csv_adapter import read_csv
+from backend.app.ingestion.normalizer import normalize_weather_event
+from backend.app.ingestion.validator import validate_weather_event
 
 def ingest_csv(file_path: str):
     """Read, normalize and validate CSV records one at a time."""

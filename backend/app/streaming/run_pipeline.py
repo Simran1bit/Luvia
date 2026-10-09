@@ -1,8 +1,8 @@
 import json
 
-from ingestion.pipeline import ingest_csv
-from streaming.consumer import consume_events
-from streaming.stream import event_stream
+from backend.app.ingestion.pipeline import ingest_csv
+from backend.app.streaming.consumer import consume_events
+from backend.app.streaming.stream import event_stream
 
 
 def run_pipeline(file_path: str):

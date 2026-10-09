@@ -2,9 +2,8 @@
 from sqlalchemy import text
 
 from backend.app.database import engine
-from ai.classifier import classify_event
-from ai.similarity import compare_reports
-
+from backend.app.ai.classifier import classify_event
+from backend.app.ai.similarity import compare_reports
 
 def save_prediction(event_id, prediction_type, prediction, confidence):
     query = text("""

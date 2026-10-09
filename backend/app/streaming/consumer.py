@@ -1,7 +1,7 @@
 import json
 
 from backend.app.services.event_persistence import save_event
-from streaming.stream import event_stream
+from backend.app.streaming.stream import event_stream
 
 
 def consume_events():
