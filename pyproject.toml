@@ -26,3 +26,9 @@ dependencies = [
     "tzdata==2026.4",
     "uvicorn==0.53.0",
 ]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=9.1.1",
+]
