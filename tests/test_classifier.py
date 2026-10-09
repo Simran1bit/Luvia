@@ -1,6 +1,4 @@
-
-from ai.classifier import classify_event
-
+from backend.app.ai.classifier import classify_event
 
 def test_thunderstorm_is_classified_as_severe_weather():
     result = classify_event(
