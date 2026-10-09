@@ -1,5 +1,5 @@
 from backend.app.services.event_persistence import save_event
-from ingestion.pipeline import ingest_csv
+from backend.app.ingestion.pipeline import ingest_csv
 
 
 if __name__ == "__main__":

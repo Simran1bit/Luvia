@@ -1,6 +1,6 @@
 import json
 
-from ingestion.pipeline import ingest_csv
+from backend.app.ingestion.pipeline import ingest_csv
 from streaming.stream import event_stream
 
 
