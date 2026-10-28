@@ -25,8 +25,8 @@ def get_map_events():
             e.verification_status,
             l.latitude,
             l.longitude,
-            l.city,
-            l.state
+            COALESCE(e.city, l.city) AS city,
+            COALESCE(e.state, l.state) AS state
 
         FROM events e
 

@@ -141,6 +141,7 @@ def create_event(event: EventCreate):
 def get_events():
     # Include optional location data without hiding events that lack coordinates.
 
+    # coalesce(): use the event's city/state if present; otherwise, use the values stored in locations
     query = text("""
         SELECT
             e.event_id,
@@ -148,8 +149,8 @@ def get_events():
             e.title,
             e.description,
             e.event_timestamp,
-            e.city,
-            e.state,
+            COALESCE(e.city, l.city) AS city,
+            COALESCE(e.state, l.state) AS state,
             e.severity,
             e.credibility_score,
             e.verification_status,
@@ -184,13 +185,13 @@ def get_event(event_id: int):
     event_query = text("""
         SELECT
             e.*,
+            COALESCE(e.city, l.city) AS city,
+            COALESCE(e.state, l.state) AS state,
             l.latitude,
             l.longitude
         FROM events e
-
         LEFT JOIN locations l
             ON e.event_id = l.event_id
-
         WHERE e.event_id = :event_id
     """)
 

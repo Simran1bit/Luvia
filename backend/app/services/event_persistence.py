@@ -29,13 +29,15 @@ def save_event(event: dict) -> int:
         result = connection.execute(
             text(
                 """
-                INSERT INTO events (
-                    event_type,
-                    title,
-                    description,
-                    event_timestamp,
-                    severity,
-                    verification_status
+               INSERT INTO events (
+                event_type,
+                title,
+                description,
+                event_timestamp,
+                severity,
+                verification_status,
+                city,
+                state
                 )
                 VALUES (
                     :event_type,
@@ -43,7 +45,9 @@ def save_event(event: dict) -> int:
                     :description,
                     :event_timestamp,
                     :severity,
-                    :verification_status
+                    :verification_status,
+                    :city,
+                    :state
                 )
                 RETURNING event_id
                 """
@@ -53,6 +57,8 @@ def save_event(event: dict) -> int:
                 "title": title,
                 "description": description,
                 "event_timestamp": event["timestamp"],
+                "city": location["name"],
+                "state": location.get("state"),
                 "severity": "unknown",
                 "verification_status": "unverified",
             },
@@ -102,6 +108,7 @@ def save_event(event: dict) -> int:
                     latitude,
                     longitude,
                     city,
+                    state,
                     geometry
                 )
                 VALUES (
@@ -109,6 +116,7 @@ def save_event(event: dict) -> int:
                     :latitude,
                     :longitude,
                     :city,
+                    :state,
                     ST_SetSRID(
                         ST_MakePoint(:longitude, :latitude),
                         4326
@@ -121,6 +129,7 @@ def save_event(event: dict) -> int:
                 "latitude": location["latitude"],
                 "longitude": location["longitude"],
                 "city": location["name"],
+                "state": location.get("state"),
             },
         )
 
