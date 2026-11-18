@@ -1,0 +1,2 @@
+import { CloudLightning } from 'lucide-react';
+export default function Brand() { return <div className="brand"><div className="brand-mark"><CloudLightning size={26} strokeWidth={2.2}/></div><div><div className="brand-name">LUVIA</div><div className="brand-subtitle">WEATHER INTELLIGENCE</div></div></div>; }

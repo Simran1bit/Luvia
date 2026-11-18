@@ -1,0 +1,63 @@
+/* =====================================================================
+   LUVIA – additions for severity / verification / IMD overlay.
+   Imported from App.jsx. Does not modify global.css.
+   ===================================================================== */
+
+/* ---- Map legend rings ------------------------------------------------ */
+.map-legend b { color: #3d5e7e; font-weight: 800; margin-left: 2px; }
+.legend-ring { width: 10px; height: 10px; border-radius: 50%; display: inline-block; background: #fff; }
+.legend-ring.review { border: 2px dashed #b45309; }
+.legend-ring.verified { border: 2px solid #14966e; }
+
+/* ---- Treemap --------------------------------------------------------- */
+.treemap-toggle { display: inline-flex; border: 1px solid #dce7f1; border-radius: 9px; overflow: hidden; background: #fff; flex-shrink: 0; }
+.treemap-toggle button { border: 0; background: transparent; padding: 7px 10px; font-size: 10px; font-weight: 700; color: #6d829a; }
+.treemap-toggle button.on { background: #e8f3ff; color: #1e65a8; }
+
+.state-tile.sev-critical { background: #ef8a91; }
+.state-tile.sev-high     { background: #f6a4a8; }
+.state-tile.sev-medium   { background: #f7d18d; }
+.state-tile.sev-low      { background: #b8dafa; }
+.state-tile.sev-unknown  { background: #dbe4ee; }
+.state-tile em { font-style: normal; display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; min-height: 12px; }
+.tile-chip { font-size: 8px; font-weight: 800; padding: 2px 5px; border-radius: 4px; background: #ffffffb8; }
+.tile-chip.review { color: #9c6813; }
+.tile-chip.verified { color: #137b5d; }
+.treemap-note .legend-dot { margin: 0 2px 0 1px; vertical-align: middle; }
+
+/* ---- Event list ------------------------------------------------------ */
+.event-copy strong { display: flex; align-items: center; gap: 6px; }
+.sev-chip { font-size: 8px; font-weight: 800; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; letter-spacing: .3px; flex-shrink: 0; display: inline-block; }
+.event-copy small { gap: 5px; }
+.vstatus { display: inline-flex; align-items: center; gap: 3px; font-weight: 700; color: #7b8fa3; }
+.vstatus.verified { color: #137b5d; }
+.vstatus.needs_review, .vstatus.pending { color: #9c6813; }
+.imd-chip { display: inline-flex; align-items: center; gap: 3px; font-size: 8px; font-weight: 800; padding: 2px 5px; border-radius: 4px; background: #fff0d7; color: #a66a08; text-transform: capitalize; }
+.list-more { width: 100%; border: 0; border-top: 1px solid #edf1f5; background: #f7fafc; color: #2a7dc3; font-size: 11px; font-weight: 700; padding: 11px; }
+.list-more:hover { background: #eef7ff; }
+.event-list-panel .event-list { max-height: 560px; overflow-y: auto; }
+
+/* ---- Event details: "why flagged" ------------------------------------ */
+.risk-block { margin: 0 0 14px; padding: 12px; border-radius: 10px; background: #fff8ec; border: 1px solid #f6e1b8; }
+.risk-block h3 { font-size: 12px; margin: 0; color: #7a4d06; }
+.risk-block ul { margin: 8px 0 6px; padding-left: 16px; font-size: 10px; line-height: 1.6; color: #6b5320; }
+.risk-block .risk-desc { font-size: 10px; color: #6b5320; margin: 4px 0; }
+.risk-block small { display: block; font-size: 9px; color: #a08a5a; line-height: 1.5; }
+.imd-pill { font-size: 9px; font-weight: 800; padding: 3px 7px; border-radius: 5px; text-transform: uppercase; color: #fff; background: #718096; }
+.imd-pill.yellow { background: #d6a300; }
+.imd-pill.orange { background: #e87520; }
+.imd-pill.red { background: #d93636; }
+.imd-pill.green { background: #16834a; }
+.status-pill.critical { background: #fde2e2; color: #b91c1c; }
+
+/* ---- Notices --------------------------------------------------------- */
+.data-hint { display: flex; align-items: flex-start; gap: 10px; border: 1px solid #f6e1b8; background: #fff8ec; color: #7a4d06; border-radius: 10px; padding: 12px; font-size: 11px; line-height: 1.6; }
+.data-hint svg { flex-shrink: 0; margin-top: 2px; }
+.data-hint code { background: #ffffffb0; padding: 1px 5px; border-radius: 4px; font-size: 10px; }
+.imd-note { align-items: flex-start; gap: 10px; flex-wrap: wrap; line-height: 1.6; }
+.imd-note svg { flex-shrink: 0; margin-top: 3px; }
+.imd-note-body { flex: 1; min-width: 220px; font-size: 10px; }
+.imd-note-body p { margin: 4px 0; }
+.imd-note-body a { display: inline-flex; align-items: center; gap: 5px; color: #2a7dc3; font-weight: 700; }
+
+.filter-extra { flex-wrap: wrap; }

@@ -1,0 +1,3 @@
+Map tiles: the interactive map uses OpenStreetMap tile servers and includes visible attribution. A network connection is required to load map tiles. Please review OpenStreetMap's tile usage policy before high-volume or production use. No state-boundary GeoJSON is bundled; current map boundaries are those visible in the selected basemap.
+
+The CSS dashboard themes are created with local gradients and CSS shapes, so no background art assets are required.
