@@ -1,3 +1,4 @@
+
 # Convert raw source rows into the common LUVIA event format used by the app.
 from datetime import datetime
 
@@ -16,49 +17,59 @@ def _to_float(value):
     return float(value)
 
 
+def classify_weather_severity(rainfall):
+    """
+    Classify rainfall intensity using simple, configurable thresholds.
+
+    These are preliminary application thresholds, not official IMD
+    warning criteria. Missing rainfall remains unknown.
+    """
+    if rainfall is None:
+        return "unknown"
+
+    if rainfall < 0:
+        return "unknown"
+
+    if rainfall < 2.5:
+        return "low"
+
+    if rainfall < 15.6:
+        return "medium"
+
+    if rainfall < 64.5:
+        return "high"
+
+    return "critical"
+
 
 def normalize_weather_event(row: dict) -> dict:
     """Convert one raw weather row into LUVIA's common event format."""
+
+    temperature = _to_float(row.get("temperature"))
+    humidity = _to_float(row.get("humidity"))
+    rainfall = _to_float(row.get("rainfall"))
 
     event = {
         "event_type": "weather_observation",
         "timestamp": datetime.fromisoformat(
             row["timestamp"]
         ).isoformat(),
-        
+
         "location": {
             "name": row["location_name"],
             "state": row.get("state"),
-            "latitude": _to_float(row["latitude"]),
-            "longitude": _to_float(row["longitude"]),
+            "latitude": _to_float(row.get("latitude")),
+            "longitude": _to_float(row.get("longitude")),
         },
 
         "data": {
-            "temperature": _to_float(row["temperature"]),
-            "humidity": _to_float(row["humidity"]),
-            "rainfall": _to_float(row["rainfall"]),
+            "temperature": temperature,
+            "humidity": humidity,
+            "rainfall": rainfall,
         },
+
+        "severity": classify_weather_severity(rainfall),
         "source": row.get("source", "unknown"),
     }
 
     return event
-
-"""
-# Quick smoke test for the normalizer during local development and debugging.
-
-if __name__ == "__main__":
-    sample_row = {
-        "timestamp": "2026-09-01T10:00:00",
-        "location_name": "Delhi_Central",
-        "latitude": "28.6139",
-        "longitude": "77.2090",
-        "temperature": "31.2",
-        "humidity": "68",
-        "rainfall": "2.4",
-        "source": "MOCK",
-    }
-
-    event = normalize_weather_event(sample_row)
-
-    print(event)
-"""
