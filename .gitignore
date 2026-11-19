@@ -18,8 +18,12 @@ __pycache__/
 .DS_Store
 Thumbs.db
 
-# Notes
+# Notes/ rough
 libNotes.txt
+frontend_/
+frontend_.zip.bz2
+frontend.7z
+README_INSTALL.md
 
 # zip
 *.zip
