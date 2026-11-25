@@ -23,6 +23,8 @@ from backend.app.services.imd_warning_scheduler import (
 # Load local environment values before creating the database engine.
 load_dotenv()
 
+from Chatbot.backend.router import router as chatbot_router
+
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 # Share one pooled engine so every route reuses managed database connections.
@@ -62,6 +64,7 @@ app.include_router(analytics_router)
 app.include_router(map_router)
 app.include_router(verification_router)
 app.include_router(imd_warnings_router)
+app.include_router(chatbot_router)
 
 @app.get("/") #Decorator
 # Provide a lightweight endpoint for confirming that the API is running.
