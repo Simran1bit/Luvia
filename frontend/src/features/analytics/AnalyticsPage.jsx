@@ -84,7 +84,7 @@ const imdForecastDays = useMemo(
                     <BarChart data={byType} layout="vertical" margin={{left:12,right:10}}>
                         <CartesianGrid strokeDasharray="3 3" horizontal={false}/>
                         <XAxis type="number" allowDecimals={false}/>
-                        <YAxis dataKey="name" type="category" width={110} tick={{fontSize:11}}/>
+                        <YAxis dataKey="name" type="category" width={110} tick={{fontSize:14}}/>
                         <Tooltip/>
                         <Bar dataKey="count" fill="#5a9de2" radius={[0,5,5,0]}/>
                     </BarChart>
@@ -131,7 +131,7 @@ const imdForecastDays = useMemo(
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={byState}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false}/>
-                        <XAxis dataKey="name" interval={0} angle={-16} textAnchor="end" height={55} tick={{fontSize:10}}/>
+                        <XAxis dataKey="name" interval={0} angle={-16} textAnchor="end" height={55} tick={{fontSize:13}}/>
                         <YAxis allowDecimals={false}/>
                         <Tooltip/>
                         <Bar dataKey="count" fill="#52b7a1" radius={[5,5,0,0]}/>
@@ -175,7 +175,7 @@ const imdForecastDays = useMemo(
                     dataKey="name"
                     type="category"
                     width={90}
-                    tick={{ fontSize: 11 }}
+                    tick={{ fontSize: 14 }}
                     />
                     <Tooltip />
                     <Bar
