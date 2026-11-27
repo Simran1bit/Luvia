@@ -5,10 +5,10 @@ using Open-Meteo readings and today's official IMD district warnings.
 Put this file at:  backend/app/ingestion/run_enrich_events.py
 (needs  backend/app/ai/severity.py  from the same drop-in)
 
-RUN (from the backend/ folder, with your venv active and the API running):
+RUN (from the repository root, with your venv active and the API running):
 
-    python -m app.ingestion.run_enrich_events              # DRY RUN - changes nothing, prints a report
-    python -m app.ingestion.run_enrich_events --apply      # writes to the database
+    python -m backend.app.ingestion.run_enrich_events          # DRY RUN - changes nothing, prints a report
+    python -m backend.app.ingestion.run_enrich_events --apply  # writes to the database
 
 Options:
     --db-url URL       default: $DATABASE_URL, else DATABASE_URL in ./.env or ../.env
@@ -31,7 +31,6 @@ import json
 import os
 import re
 import sys
-import unicodedata
 import urllib.error
 import urllib.request
 from collections import Counter
@@ -40,70 +39,12 @@ from pathlib import Path
 
 from sqlalchemy import MetaData, Table, create_engine, select, update
 
-from app.ai.severity import (
-    IMD_CODE_FAMILY, SEVERITY_RANK, ImdAlert, decide, extract_readings,
+from backend.app.ai.severity import SEVERITY_RANK, decide, extract_readings
+from backend.app.services.imd_matching import (
+    build_imd_index, find_alert, norm_city, norm_state,
 )
 
 IMD_WINDOW_HOURS = 36  # an IMD "Day 1" warning only describes today's weather
-
-IMD_CODE_NAME = {
-    2: "Heavy Rain", 3: "Heavy Snow", 4: "Thunderstorm & Lightning", 5: "Hailstorm", 6: "Dust Storm",
-    7: "Dust Raising Winds", 8: "Strong Surface Winds", 9: "Heat Wave", 10: "Hot Day", 11: "Warm Night",
-    12: "Cold Wave", 13: "Cold Day", 14: "Ground Frost", 15: "Fog", 16: "Very Heavy Rain",
-    17: "Extremely Heavy Rain",
-}
-
-COLUMN_CANDIDATES = {
-    "id": ["id", "event_id"],
-    "severity": ["severity"],
-    "status": ["verification_status", "status"],
-    "confidence": ["confidence_score", "credibility_score", "verification_score"],
-    "city": ["city", "location_name", "location"],
-    "state": ["state", "region"],
-    "timestamp": ["timestamp", "event_timestamp", "created_at"],
-    "description": ["description"],
-    "risk_reasons": ["risk_reasons"],
-}
-REQUIRED = ["id", "severity", "status", "city", "state"]
-
-# ---- name matching (mirrors frontend riskService.js) -----------------------
-CITY_ALIASES = {
-    "bangalore": "bengaluru", "bombay": "mumbai", "calcutta": "kolkata", "madras": "chennai",
-    "gurgaon": "gurugram", "trivandrum": "thiruvananthapuram", "cochin": "kochi",
-    "allahabad": "prayagraj", "poona": "pune", "baroda": "vadodara", "banaras": "varanasi",
-    "benares": "varanasi", "mysore": "mysuru", "new delhi": "delhi", "khurda": "bhubaneswar",
-}
-STATE_ALIASES = {
-    "orissa": "odisha", "uttaranchal": "uttarakhand", "nct of delhi": "delhi", "delhi nct": "delhi",
-    "jammu and kashmir": "jammu kashmir", "pondicherry": "puducherry",
-}
-_DROP = re.compile(r"\b(district|dist|city|urban|rural|metropolitan|municipal corporation)\b")
-
-
-def _clean(s) -> str:
-    s = unicodedata.normalize("NFKD", str(s or "").lower())
-    s = "".join(ch for ch in s if not unicodedata.combining(ch)).replace("&", " and ")
-    s = _DROP.sub(" ", s)
-    return re.sub(r"[^a-z0-9]+", " ", s).strip()
-
-
-def norm_city(s) -> str:
-    c = _clean(s)
-    return CITY_ALIASES.get(c, c)
-
-
-def norm_state(s) -> str:
-    c = _clean(s)
-    return STATE_ALIASES.get(c, c)
-
-
-def district_matches_city(district_norm: str, city_norm: str) -> bool:
-    if not district_norm or not city_norm:
-        return False
-    if district_norm == city_norm:
-        return True
-    return city_norm in district_norm.split(" ") or district_norm.startswith(city_norm + " ")
-
 
 # ---- IMD feed --------------------------------------------------------------
 def fetch_imd(api_base: str) -> list[dict]:
@@ -116,44 +57,6 @@ def fetch_imd(api_base: str) -> list[dict]:
         print("    Continuing WITHOUT IMD corroboration (nothing can become 'verified').")
         return []
     return payload.get("warnings", []) if isinstance(payload, dict) else []
-
-
-def build_imd_index(warnings: list[dict]) -> dict[str, list[ImdAlert]]:
-    index: dict[str, list[ImdAlert]] = {}
-    color_hist: Counter = Counter()
-    for w in warnings:
-        days = w.get("days") or []
-        day1 = next((d for d in days if re.sub(r"\D", "", str(d.get("day", ""))) == "1"), days[0] if days else None)
-        if not day1:
-            continue
-        try:
-            color = int(day1.get("color_code"))
-        except (TypeError, ValueError):
-            continue
-        color_hist[color] += 1
-        codes = [int(c) for c in re.findall(r"\d+", str(day1.get("warning_code", ""))) if int(c) != 1]
-        if color < 2 or not codes:
-            continue
-        index.setdefault(norm_state(w.get("state")), []).append(
-            ImdAlert(
-                district=w.get("district", "?"), color_code=color,
-                families={IMD_CODE_FAMILY[c] for c in codes if c in IMD_CODE_FAMILY},
-                types=[IMD_CODE_NAME.get(c, f"code {c}") for c in codes],
-            )
-        )
-    if color_hist:
-        print(f"  IMD Day-1 colour codes seen: {dict(sorted(color_hist.items()))}")
-        print("  (sanity check: code 1 should be by far the most common - that is 'green / no warning')")
-    return index
-
-
-def find_alert(index: dict[str, list[ImdAlert]], city, state) -> ImdAlert | None:
-    best = None
-    cn = norm_city(city)
-    for a in index.get(norm_state(state), []):
-        if district_matches_city(norm_city(a.district), cn) and (best is None or a.color_code > best.color_code):
-            best = a
-    return best
 
 
 # ---- helpers ---------------------------------------------------------------
@@ -260,7 +163,7 @@ def main(argv: list[str] | None = None) -> int:
 
     print("Reading IMD warnings from the API ...")
     imd_index = build_imd_index(fetch_imd(args.api_base))
-    imd_alert_districts = sum(len(v) for v in imd_index.values())
+    imd_alert_districts = len(imd_index)
     print(f"  {imd_alert_districts} districts have a yellow/orange/red Day-1 warning.")
 
     now = datetime.now(timezone.utc)

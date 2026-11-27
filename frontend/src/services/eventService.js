@@ -1,4 +1,4 @@
-import { USE_MOCK_DATA } from '../constants/config';
+import { LIVE_WINDOW_HOURS, USE_MOCK_DATA } from '../constants/config';
 import { demoEvents } from '../mocks/events';
 import { request } from './apiClient';
 import { normalizeSeverity, normalizeVerification } from '../constants/severity';
@@ -10,7 +10,9 @@ import { normalizeSeverity, normalizeVerification } from '../constants/severity'
 // GET /analytics -> { total_events, verified_events, events_by_severity, events_by_type }
 export async function getEvents() {
   if (USE_MOCK_DATA) return { events: demoEvents, mode: 'demo' };
-  const payload = await request('/events');
+  // Live sources only (Open-Meteo, METAR, IMD stations) from the configured window.
+  const params = new URLSearchParams({ source: 'live', since_hours: String(LIVE_WINDOW_HOURS) });
+  const payload = await request(`/events?${params}`);
   const events = Array.isArray(payload) ? payload : payload?.events;
   if (!Array.isArray(events)) throw new Error('GET /events returned an unexpected response. Expected an object containing an events array.');
   return { events: events.map(normalizeEvent), mode: 'live' };

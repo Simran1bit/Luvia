@@ -1,0 +1,5 @@
+[
+  {"icaoId":"VIDP","obsTime":1795806000,"temp":17,"dewp":10,"wdir":"VRB","wspd":2,"visib":1.74,"altim":1020,"wxString":"HZ","rawOb":"METAR VIDP 271900Z VRB02KT 2800 HZ NSC 17/10 Q1020 NOSIG","lat":28.567,"lon":77.117,"name":"New Delhi/Gandhi Intl, DL, IN"},
+  {"icaoId":"VIDP","obsTime":1795804200,"temp":17,"dewp":10,"wdir":"VRB","wspd":2,"visib":1.74,"altim":1021,"wxString":"HZ","rawOb":"METAR VIDP 271830Z VRB02KT 2800 HZ NSC 17/10 Q1021 NOSIG","lat":28.567,"lon":77.117,"name":"New Delhi/Gandhi Intl, DL, IN"},
+  {"icaoId":"VABB","obsTime":1795806000,"temp":27,"dewp":24,"wdir":250,"wspd":20,"wgst":38,"visib":2.5,"altim":1004,"wxString":"+TSRA","rawOb":"METAR VABB 271900Z 25020G38KT 4000 +TSRA FEW015CB 27/24 Q1004","lat":19.1,"lon":72.859,"name":"Mumbai/Shivaji Intl, MM, IN"}
+]

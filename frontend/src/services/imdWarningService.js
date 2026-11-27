@@ -20,6 +20,12 @@ export async function getImdWarnings({ district, limit = 756 } = {}) {
   };
 }
 
+// The IMD feed numbers its colours in reverse (4 = green ... 1 = red; every
+// "No Warning" district carries 4). Convert to an alert level 1 green ... 4 red,
+// which is what IMD_COLOR and the rest of the app expect. 0/missing -> null.
+const FEED_COLOR_TO_LEVEL = { 4: 1, 3: 2, 2: 3, 1: 4 };
+const feedColorToLevel = (value) => FEED_COLOR_TO_LEVEL[Number(value)] ?? null;
+
 // "Day_1", "day 1", 1 and "1" all become 1.
 function parseDay(value) {
   const n = Number(String(value ?? '').replace(/\D/g, ''));
@@ -33,13 +39,13 @@ function normalizeImdWarning(raw = {}) {
           .split(',')
           .map((code) => code.trim())
           .filter(Boolean);
-        const colorCode = Number(day.color_code ?? day.colorCode);
+        const colorCode = feedColorToLevel(day.color_code ?? day.colorCode);
 
         return {
           day: parseDay(day.day),
           warningCodes: codes,
           warningTypes: codes.map((code) => IMD_WARNING_TYPES[Number(code)] ?? `Unknown warning (${code})`),
-          colorCode: Number.isFinite(colorCode) ? colorCode : null,
+          colorCode,
           severityColor: IMD_COLOR[colorCode]?.name ?? 'unknown',
           description: day.description ?? null
         };

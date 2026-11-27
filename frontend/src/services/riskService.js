@@ -21,7 +21,10 @@ const CITY_ALIASES = {
   bombay: 'mumbai', calcutta: 'kolkata', madras: 'chennai', gurgaon: 'gurugram',
   trivandrum: 'thiruvananthapuram', cochin: 'kochi', allahabad: 'prayagraj', poona: 'pune',
   baroda: 'vadodara', banaras: 'varanasi', benares: 'varanasi', mysore: 'mysuru',
-  'new delhi': 'delhi', bhubaneswar: 'bhubaneswar', khurda: 'bhubaneswar'
+  'new delhi': 'delhi', bhubaneswar: 'bhubaneswar', khurda: 'bhubaneswar', khordha: 'bhubaneswar',
+  // IMD feed spellings for registered cities
+  banglore: 'bengaluru', ahmadabad: 'ahmedabad', ernakulam: 'kochi', kamrup: 'guwahati',
+  'dakshin kannada': 'mangaluru', vishakhapatnam: 'visakhapatnam', thiruchirapalli: 'tiruchirappalli'
 };
 const STATE_ALIASES = {
   orissa: 'odisha', uttaranchal: 'uttarakhand', 'nct of delhi': 'delhi', 'delhi nct': 'delhi',
@@ -50,17 +53,17 @@ function districtMatchesCity(districtNorm, cityNorm) {
   return words.includes(cityNorm) || districtNorm.startsWith(`${cityNorm} `);
 }
 
-/** Build a lookup: normalized state -> list of {district, day1} (only real Day-1 warnings). */
+/** List of {district, day1} for real Day-1 warnings.
+ *  The IMD feed leaves `state` empty for almost every district, so matching is
+ *  done on district name alone instead of grouping by state. */
 function indexWarnings(warnings) {
-  const byState = new Map();
+  const list = [];
   for (const w of warnings || []) {
     const day = dayOne(w);
     if (!isRealWarning(day)) continue;
-    const stateKey = normState(w.state);
-    if (!byState.has(stateKey)) byState.set(stateKey, []);
-    byState.get(stateKey).push({ district: w.district, districtNorm: normCity(w.district), day });
+    list.push({ district: w.district, districtNorm: normCity(w.district), day });
   }
-  return byState;
+  return list;
 }
 
 /** Highest Day-1 IMD alert that applies to a city/state pair, or null. */
@@ -69,9 +72,8 @@ function findAlert(index, city, state, cache) {
   if (cache.has(key)) return cache.get(key);
 
   const cityNorm = normCity(city);
-  const candidates = index.get(normState(state)) || [];
   let best = null;
-  for (const c of candidates) {
+  for (const c of index) {
     if (!districtMatchesCity(c.districtNorm, cityNorm)) continue;
     if (!best || (c.day.colorCode ?? 0) > (best.day.colorCode ?? 0)) best = c;
   }
@@ -103,7 +105,7 @@ export function enrichEvents(events, imdWarnings) {
   const cache = new Map();
 
   const latest = new Map();
-  if (index.size) {
+  if (index.length) {
     for (const e of events) {
       const t = Date.parse(e.timestamp) || 0;
       const key = locationKey(e);
@@ -117,7 +119,7 @@ export function enrichEvents(events, imdWarnings) {
     const backendStatus = normalizeVerification(e.verification_status);
 
     let alert = null;
-    if (index.size && latest.get(locationKey(e))?.id === e.id) {
+    if (index.length && latest.get(locationKey(e))?.id === e.id) {
       const ageHours = (Date.now() - new Date(e.timestamp).getTime()) / 3600000;
       const fresh = !e.timestamp || !Number.isFinite(ageHours) || ageHours <= OVERLAY_MAX_AGE_HOURS;
       if (fresh) alert = findAlert(index, e.city, e.state, cache);

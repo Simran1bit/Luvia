@@ -1,95 +1,139 @@
+"""Fetch current weather for every registered Indian city from Open-Meteo.
 
-"""Fetch current weather snapshots for multiple Indian locations."""
+Open-Meteo accepts comma-separated coordinates, so all cities are fetched in a
+few batched requests instead of one request per city.
+
+Each returned row is in LUVIA's raw observation format (what
+``normalizer.normalize_weather_event`` expects) plus:
+
+* ``readings`` - keys understood by ``backend.app.ai.severity.classify_readings``
+* ``raw``      - the untouched Open-Meteo values, kept as evidence
+"""
 
 import json
+from datetime import datetime
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
+from backend.app.ingestion.locations import INDIAN_LOCATIONS  # noqa: F401  (re-exported)
 
-# Representative locations across India.
-# Coordinates are approximate city-centre coordinates.
-INDIAN_LOCATIONS = [
-    {"location_name": "New Delhi", "state": "Delhi", "latitude": 28.6139, "longitude": 77.2090},
-    {"location_name": "Mumbai", "state": "Maharashtra", "latitude": 19.0760, "longitude": 72.8777},
-    {"location_name": "Kolkata", "state": "West Bengal", "latitude": 22.5726, "longitude": 88.3639},
-    {"location_name": "Chennai", "state": "Tamil Nadu", "latitude": 13.0827, "longitude": 80.2707},
-    {"location_name": "Bengaluru", "state": "Karnataka", "latitude": 12.9716, "longitude": 77.5946},
-    {"location_name": "Hyderabad", "state": "Telangana", "latitude": 17.3850, "longitude": 78.4867},
-    {"location_name": "Jaipur", "state": "Rajasthan", "latitude": 26.9124, "longitude": 75.7873},
-    {"location_name": "Lucknow", "state": "Uttar Pradesh", "latitude": 26.8467, "longitude": 80.9462},
-    {"location_name": "Bhopal", "state": "Madhya Pradesh", "latitude": 23.2599, "longitude": 77.4126},
-    {"location_name": "Guwahati", "state": "Assam", "latitude": 26.1445, "longitude": 91.7362},
-    {"location_name": "Srinagar", "state": "Jammu and Kashmir", "latitude": 34.0837, "longitude": 74.7973},
-    {"location_name": "Bhubaneswar", "state": "Odisha", "latitude": 20.2961, "longitude": 85.8245},
-    {"location_name": "Dehradun", "state": "Uttarakhand", "latitude": 30.3165, "longitude": 78.0322},
-    {"location_name": "Patna", "state": "Bihar", "latitude": 25.5941, "longitude": 85.1376},
-    {"location_name": "Thiruvananthapuram", "state": "Kerala", "latitude": 8.5241, "longitude": 76.9366},
-]
+FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
+USER_AGENT = "LUVIA-Weather-Intelligence/1.0"
+BATCH_SIZE = 50
+
+CURRENT_FIELDS = (
+    "temperature_2m,relative_humidity_2m,precipitation,rain,weather_code,"
+    "wind_speed_10m,wind_gusts_10m,pressure_msl,cloud_cover"
+)
 
 
-def fetch_open_meteo(
-    location_name="New Delhi",
-    latitude=28.6139,
-    longitude=77.2090,
-    state=None,
-):
-    """Fetch one current weather snapshot in LUVIA's raw event format."""
+def _request_json(params: dict, timeout: int = 30):
+    url = f"{FORECAST_URL}?{urlencode(params)}"
+    request = Request(url, headers={"User-Agent": USER_AGENT})
+    with urlopen(request, timeout=timeout) as response:
+        return json.loads(response.read().decode("utf-8"))
 
-    params = {
-        "latitude": latitude,
-        "longitude": longitude,
-        "current": "temperature_2m,relative_humidity_2m,precipitation",
-        "timezone": "Asia/Kolkata",
-    }
 
-    url = "https://api.open-meteo.com/v1/forecast?" + urlencode(params)
-    request = Request(
-        url,
-        headers={"User-Agent": "LUVIA-Weather-Intelligence/1.0"},
-    )
+def _rain_totals(hourly: dict, current_time: str) -> tuple[float | None, float | None]:
+    """Return (last hour, last 24 hours) precipitation up to the current hour.
 
-    with urlopen(request, timeout=20) as response:
-        result = json.loads(response.read().decode("utf-8"))
+    Open-Meteo hourly precipitation at time T is the total for the hour ending
+    at T. Only hours at or before the current observation time are counted, so
+    no forecast values leak into the totals.
+    """
+    times = hourly.get("time") or []
+    values = hourly.get("precipitation") or []
+    if not times or not current_time:
+        return None, None
 
-    current = result.get("current")
+    now = datetime.fromisoformat(current_time)
+    past = [
+        (datetime.fromisoformat(t), v)
+        for t, v in zip(times, values)
+        if v is not None and datetime.fromisoformat(t) <= now
+    ]
+    if not past:
+        return None, None
+
+    last_24 = [v for t, v in past if (now - t).total_seconds() < 24 * 3600]
+    return float(past[-1][1]), float(sum(last_24))
+
+
+def parse_location_payload(location: dict, payload: dict) -> dict:
+    """Convert one Open-Meteo location result into a LUVIA raw observation row."""
+    current = payload.get("current")
     if not current:
-        raise ValueError(f"No current weather data returned for {location_name}.")
+        raise ValueError(f"No current weather returned for {location['location_name']}.")
+
+    rain_1h, rain_24h = _rain_totals(payload.get("hourly") or {}, current.get("time"))
+
+    readings = {
+        "temp_c": current.get("temperature_2m"),
+        "gust_kmh": current.get("wind_gusts_10m"),
+        "weather_code": current.get("weather_code"),
+        "rain_1h_mm": rain_1h,
+        "rain_24h_mm": rain_24h,
+    }
 
     return {
-        "timestamp": current["time"],
-        "location_name": location_name,
-        "state": state,
-        "latitude": latitude,
-        "longitude": longitude,
+        # Requested with timezone=GMT, so the naive timestamp is UTC.
+        "timestamp": f"{current['time']}+00:00",
+        "location_name": location["location_name"],
+        "state": location.get("state"),
+        "latitude": location["latitude"],
+        "longitude": location["longitude"],
         "temperature": current.get("temperature_2m"),
         "humidity": current.get("relative_humidity_2m"),
+        # Current-interval precipitation (Open-Meteo's 15-minute value).
         "rainfall": current.get("precipitation"),
         "source": "OPEN_METEO",
+        "readings": {k: v for k, v in readings.items() if v is not None},
+        "raw": {"current": current, "rain_1h_mm": rain_1h, "rain_24h_mm": rain_24h},
     }
 
 
-def fetch_india_weather():
-    """Fetch snapshots across configured locations, continuing after individual failures."""
+def fetch_india_weather(locations=None):
+    """Fetch snapshots for all locations, continuing after individual failures.
 
-    results = []
-    failures = []
+    Returns ``(rows, failures)``.
+    """
+    locations = list(locations or INDIAN_LOCATIONS)
+    rows, failures = [], []
 
-    for location in INDIAN_LOCATIONS:
+    for start in range(0, len(locations), BATCH_SIZE):
+        batch = locations[start:start + BATCH_SIZE]
+        params = {
+            "latitude": ",".join(str(loc["latitude"]) for loc in batch),
+            "longitude": ",".join(str(loc["longitude"]) for loc in batch),
+            "current": CURRENT_FIELDS,
+            "hourly": "precipitation",
+            "past_hours": 24,
+            "forecast_hours": 1,
+            "timezone": "GMT",
+        }
+
         try:
-            results.append(fetch_open_meteo(**location))
-            print(f"Fetched: {location['location_name']}, {location['state']}")
-        except Exception as exc:
-            failures.append({
-                "location": location["location_name"],
-                "error": str(exc),
-            })
-            print(f"Failed: {location['location_name']}: {exc}")
+            payload = _request_json(params)
+        except Exception as exc:  # network / HTTP / JSON errors fail the whole batch
+            failures.extend(
+                {"location": loc["location_name"], "error": str(exc)} for loc in batch
+            )
+            continue
 
-    return results, failures
+        # A single location returns an object; several return a list.
+        results = payload if isinstance(payload, list) else [payload]
+
+        for location, result in zip(batch, results):
+            try:
+                rows.append(parse_location_payload(location, result))
+            except Exception as exc:
+                failures.append({"location": location["location_name"], "error": str(exc)})
+
+    return rows, failures
 
 
 if __name__ == "__main__":
-    snapshots, failures = fetch_india_weather()
-    print(f"\nSuccessful snapshots: {len(snapshots)}")
-    print(f"Failed locations: {len(failures)}")
-    print(json.dumps(snapshots, indent=2))
+    snapshots, problems = fetch_india_weather()
+    print(f"Successful snapshots: {len(snapshots)}")
+    print(f"Failed locations: {len(problems)}")
+    print(json.dumps(snapshots[:2], indent=2))

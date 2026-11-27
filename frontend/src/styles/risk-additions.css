@@ -61,3 +61,19 @@
 .imd-note-body a { display: inline-flex; align-items: center; gap: 5px; color: #2a7dc3; font-weight: 700; }
 
 .filter-extra { flex-wrap: wrap; }
+
+/* ---- Official SACHET alerts (map column, below Regional activity) ------ */
+.alerts-panel .panel-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.alerts-panel .event-list { max-height: 440px; overflow-y: auto; }
+.alerts-panel .toggle-count { display: inline-block; min-width: 18px; margin-left: 4px; padding: 0 5px; border-radius: 6px; background: #eef3f8; font-size: 11px; line-height: 17px; }
+.alerts-panel .treemap-toggle button.on .toggle-count { background: #fff; }
+.alert-item .alert-chevron { transition: transform .18s; flex-shrink: 0; color: #9aabbc; }
+.alert-item.open .alert-chevron { transform: rotate(180deg); }
+.alert-detail { padding: 2px 15px 13px 53px; background: #eef7ff; font-size: 13px; color: #3f5a74; line-height: 1.5; }
+.alert-detail p { margin: 0 0 6px; }
+.alert-detail .alert-instruction strong { color: #274765; }
+.alert-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; font-size: 12px; color: #8294a6; }
+.alert-meta a { display: inline-flex; align-items: center; gap: 4px; color: #2a7dc3; font-weight: 700; text-decoration: none; }
+.alert-meta a:hover { text-decoration: underline; }
+.alerts-note { padding: 10px 15px 13px; margin: 0; border-top: 1px solid #edf1f5; }
+.alerts-note a { display: inline-flex; align-items: center; gap: 3px; color: #2a7dc3; font-weight: 700; text-decoration: none; }

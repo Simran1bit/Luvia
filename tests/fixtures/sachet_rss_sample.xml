@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>All India: CAP Disaster Alert Feeds</title>
+    <item>
+      <title>Light to mod Rain withts is very likely to occur at isolated places over Chennai in next 3 hours.</title>
+      <description/>
+      <category>Met</category>
+      <link>https://sachet.ndma.gov.in/cap_public_website/FetchXMLFile?identifier=1795797952848041</link>
+      <author>controlroom@ndma.gov.in (IMD Chennai)</author>
+      <guid isPermaLink="false">1795797952848041</guid>
+      <pubDate>Fri, 27 Nov 2026 16:48:17 GMT</pubDate>
+    </item>
+    <item>
+      <title>Item without a guid is ignored</title>
+      <link>https://example.invalid/x</link>
+    </item>
+  </channel>
+</rss>

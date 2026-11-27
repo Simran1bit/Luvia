@@ -1,0 +1,4 @@
+{"latitude":19.07,"longitude":72.87,"timezone":"GMT",
+ "current":{"time":"2026-11-27T19:00","interval":900,"temperature_2m":27.1,"relative_humidity_2m":88,"precipitation":4.2,"rain":4.2,"weather_code":65,"wind_speed_10m":22.0,"wind_gusts_10m":70.5,"pressure_msl":1004.2,"cloud_cover":100},
+ "hourly":{"time":["2026-11-26T19:00","2026-11-26T20:00","2026-11-27T18:00","2026-11-27T19:00","2026-11-27T20:00"],
+           "precipitation":[50.0,10.0,40.0,20.0,99.0]}}

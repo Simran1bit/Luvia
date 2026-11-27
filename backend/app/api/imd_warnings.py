@@ -21,13 +21,15 @@ SOURCE_URL = (
     "districtWiseWarningGIS.php"
 )
 
-# Based on the colour-code mapping used by the frontend.
+# IMD feed colour codes run in reverse (checked against live data: every
+# "1 - No Warning" district carries colour 4). See services/imd_matching.py.
 COLOUR_NAMES = {
-    "1": "green",
-    "2": "yellow",
-    "3": "orange",
-    "4": "red",
+    "4": "green",
+    "3": "yellow",
+    "2": "orange",
+    "1": "red",
 }
+SEVERE_COLOUR_CODES = ("2", "1")  # orange, red
 
 WARNING_TYPES = {
     "1": "No Warning",
@@ -238,7 +240,7 @@ def get_imd_warning_analytics():
 
         for day in sorted(day_counts, key=lambda value: int(value)):
             severe = set()
-            for colour_code in ("3", "4"):
+            for colour_code in SEVERE_COLOUR_CODES:
                 severe.update(
                     districts_by_day_colour.get((day, colour_code), set())
                 )

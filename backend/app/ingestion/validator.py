@@ -1,5 +1,15 @@
-def validate_weather_event(event: dict) -> tuple[bool, list[str]]:
-    """Validate required fields and basic weather value ranges."""
+DEFAULT_REQUIRED = ("temperature", "humidity", "rainfall")
+
+
+def validate_weather_event(
+    event: dict, required: tuple[str, ...] = DEFAULT_REQUIRED
+) -> tuple[bool, list[str]]:
+    """Validate required fields and basic weather value ranges.
+
+    ``required`` lists the measurements that must be present. Sources that do
+    not report every value (METAR has no rainfall amount) pass a shorter tuple;
+    any value that *is* present is still range-checked.
+    """
 
     errors = []
 
@@ -20,14 +30,13 @@ def validate_weather_event(event: dict) -> tuple[bool, list[str]]:
     if longitude is None:
         errors.append("longitude is missing")
 
-    if temperature is None:
-        errors.append("temperature is missing")
-
-    if humidity is None:
-        errors.append("humidity is missing")
-
-    if rainfall is None:
-        errors.append("rainfall is missing")
+    for name, value in (
+        ("temperature", temperature),
+        ("humidity", humidity),
+        ("rainfall", rainfall),
+    ):
+        if name in required and value is None:
+            errors.append(f"{name} is missing")
 
     # Geographic coordinates must stay within valid Earth ranges.
     if latitude is not None and not -90 <= latitude <= 90:

@@ -6,6 +6,7 @@ import IndiaMap from '../../components/IndiaMap';
 import EventDetails from '../../components/EventDetails';
 import EventList from '../../components/EventList';
 import StateTreemap from '../../components/StateTreemap';
+import OfficialAlertsPanel from './OfficialAlertsPanel';
 import { isPriority, needsReview, isVerified, normalizeSeverity, severityRank, normalizeVerification, VERIFICATION } from '../../constants/severity';
 
 const ALL_TYPES = 'All event types';
@@ -68,7 +69,8 @@ export default function LiveMapPage({
     events.forEach((e, i) => seen.set(eventKey(e, i), e));
     const all = [...seen.values()];
     return {
-      observations: all.filter((e) => e.event_type === 'weather_observation').length,
+      // Every live record is a measurement; hazardous ones carry a hazard event_type.
+      observations: all.length,
       records: all.length,
       priorityEvents: all.filter((e) => isPriority(e.severity)).length,
       review: all.filter((e) => needsReview(e.verification_status)).length,
@@ -201,7 +203,7 @@ export default function LiveMapPage({
       </div>
 
       <div className="stats-grid">
-        <StatCard label="Weather observations" value={totals.observations} tone="blue" sub="Historical and current readings" />
+        <StatCard label="Weather observations" value={totals.observations} tone="blue" sub={mode === 'demo' ? 'Synthetic demo records' : 'Live readings in the loaded window'} />
         <StatCard label="High priority" value={highValue} tone="red" sub={highSub} />
         <StatCard label="Needs review" value={totals.review} tone="amber" sub="High-severity or awaiting assessment" />
         <StatCard label="Verified" value={totals.verified} tone="green" sub="Confirmed by 2+ independent sources" />
@@ -211,6 +213,7 @@ export default function LiveMapPage({
         <div className="map-column">
           <IndiaMap events={filtered} selected={selectedLive} onSelect={setSelected} stateFilter={stateFilter} onClearState={() => setStateFilter(null)} />
           <StateTreemap events={filtered} selectedState={stateFilter} onSelect={setStateFilter} />
+          <OfficialAlertsPanel />
         </div>
 
         <div className="side-column">

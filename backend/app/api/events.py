@@ -1,6 +1,6 @@
 """Create and retrieve events together with their related records."""
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import text
 
 from backend.app.database import engine
@@ -10,6 +10,39 @@ router = APIRouter(
     prefix="/events",
     tags=["Events"]
 )
+
+# Source names written by the live ingestion pipeline (backend/app/ingestion/live_pipeline.py).
+LIVE_SOURCES = ("OPEN_METEO", "METAR", "IMD_STATION")
+
+
+def event_filters(since_hours: float, source: str):
+    """Build the WHERE clause shared by /events and /map.
+
+    since_hours: only events newer than this many hours (0 = no time limit).
+    source:      "all", "live" (Open-Meteo, METAR, IMD stations) or one source name.
+    """
+    conditions, params = [], {}
+
+    if since_hours and since_hours > 0:
+        conditions.append("e.event_timestamp >= NOW() - make_interval(secs => :since_secs)")
+        params["since_secs"] = since_hours * 3600
+
+    source = (source or "all").strip()
+    if source.lower() == "live":
+        conditions.append(
+            "EXISTS (SELECT 1 FROM sources s WHERE s.event_id = e.event_id"
+            " AND s.source_name = ANY(:live_sources))"
+        )
+        params["live_sources"] = list(LIVE_SOURCES)
+    elif source.lower() != "all":
+        conditions.append(
+            "EXISTS (SELECT 1 FROM sources s WHERE s.event_id = e.event_id"
+            " AND UPPER(s.source_name) = UPPER(:source_name))"
+        )
+        params["source_name"] = source
+
+    where = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+    return where, params
 
 
 @router.post("")
@@ -138,11 +171,16 @@ def create_event(event: EventCreate):
 
 
 @router.get("")
-def get_events():
+def get_events(
+    since_hours: float = Query(default=48, ge=0, description="Only events from the last N hours; 0 = all"),
+    source: str = Query(default="all", description="all, live, or a source name such as METAR"),
+    limit: int = Query(default=2000, ge=1, le=10000),
+):
     # Include optional location data without hiding events that lack coordinates.
 
     # coalesce(): use the event's city/state if present; otherwise, use the values stored in locations
-    query = text("""
+    where, params = event_filters(since_hours, source)
+    query = text(f"""
         SELECT
             e.event_id,
             e.event_type,
@@ -154,6 +192,7 @@ def get_events():
             e.severity,
             e.credibility_score,
             e.verification_status,
+            e.risk_reasons,
             l.latitude,
             l.longitude
 
@@ -162,11 +201,14 @@ def get_events():
         LEFT JOIN locations l
             ON e.event_id = l.event_id
 
+        {where}
+
         ORDER BY e.event_timestamp DESC
+        LIMIT :limit
     """)
 
     with engine.connect() as connection:
-        result = connection.execute(query)
+        result = connection.execute(query, {**params, "limit": limit})
 
         events = [
             dict(row)

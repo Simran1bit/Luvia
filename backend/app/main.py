@@ -15,10 +15,16 @@ from backend.app.api.imd_warnings import router as imd_warnings_router
 
 from contextlib import asynccontextmanager
 
-from backend.app.services.imd_warning_scheduler import (
-    start_imd_scheduler,
-    stop_imd_scheduler,
+from backend.app.api.alerts import router as alerts_router
+from backend.app.services.ingestion_scheduler import (
+    start_ingestion_scheduler,
+    stop_ingestion_scheduler,
 )
+
+import logging
+
+# Show ingestion job summaries in the Uvicorn console.
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
 # Load local environment values before creating the database engine.
 load_dotenv()
@@ -35,11 +41,11 @@ engine = create_engine(
 
 @asynccontextmanager
 async def lifespan(app):
-    start_imd_scheduler()
+    start_ingestion_scheduler()
     try:
         yield
     finally:
-        stop_imd_scheduler()
+        stop_ingestion_scheduler()
 
 app = FastAPI( lifespan=lifespan,
     title="LLUVIA API",
@@ -64,6 +70,7 @@ app.include_router(analytics_router)
 app.include_router(map_router)
 app.include_router(verification_router)
 app.include_router(imd_warnings_router)
+app.include_router(alerts_router)
 app.include_router(chatbot_router)
 
 @app.get("/") #Decorator

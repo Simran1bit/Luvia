@@ -9,7 +9,7 @@ from sqlalchemy import text
 from backend.app.database import engine
 from backend.app.ingestion.normalizer import normalize_weather_event
 from backend.app.ingestion.validator import validate_weather_event
-from backend.app.services.event_persistence import save_event
+from backend.app.services.event_persistence import find_existing, save_event
 
 
 PREVIEW_FILE = Path("data/processed/historical_weather_preview.json")
@@ -42,25 +42,13 @@ def main():
             location = event["location"]
 
             with engine.connect() as connection:
-                existing = connection.execute(
-                    text("""
-                        SELECT 1
-                        FROM events e
-                        JOIN sources s ON s.event_id = e.event_id
-                        WHERE s.source_name = :source_name
-                          AND s.source_timestamp =
-                              CAST(:timestamp AS TIMESTAMPTZ)
-                          AND s.latitude = :latitude
-                          AND s.longitude = :longitude
-                        LIMIT 1
-                    """),
-                    {
-                        "source_name": event["source"],
-                        "timestamp": event["timestamp"],
-                        "latitude": location["latitude"],
-                        "longitude": location["longitude"],
-                    },
-                ).scalar_one_or_none()
+                existing = find_existing(
+                    connection,
+                    event["source"],
+                    event["timestamp"],
+                    location["latitude"],
+                    location["longitude"],
+                )
 
             if existing:
                 skipped += 1
